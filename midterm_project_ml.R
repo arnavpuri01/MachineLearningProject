@@ -31,4 +31,9 @@ percentage_na(new_dataset1,117)
 str(new_dataset1)
 new_train <- mice(new_dataset1,m=5,maxit=50,meth='pmm',seed=500) 
 
+summary(new_train)
+ncol(new_train$data)
+complete_data <- complete(new_train,1)
+complete_data
+percentage_na(complete_data$data,117)
 
