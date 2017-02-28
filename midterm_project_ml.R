@@ -1,5 +1,7 @@
 library(mice)
 library(randomForest)
+library(Boruta) 
+
 getwd()
 dataset <- read.csv("train_midterm_data.csv")
 head(dataset)
