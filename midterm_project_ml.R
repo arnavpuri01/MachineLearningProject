@@ -39,3 +39,5 @@ complete_data <- complete(new_train,1)
 complete_data
 
 percentage_na(complete_data,117)
+
+
