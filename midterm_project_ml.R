@@ -7,6 +7,7 @@ library(doParallel)
 
 getwd()
 setwd("C:/Users/Rasika/Desktop/ML and DM/Project")
+getwd()
 dataset <- read.csv("train_midterm_data.csv")
 dataset_new <- dataset[1:8988,]
 head(dataset)
@@ -25,9 +26,26 @@ percentage_na <- function(data,max_col) {
   }
 }
 
+########################################################################
+#imputing by median
+manage_na <- function(datafra)
+{
+	for(i in 1:ncol(datafra))
+	{
+		if(is.numeric(datafra[,i]))
+		{
+			datafra[is.na(datafra[,i]),i] <- median(datafra[!is.na(datafra[,i]),i])
+		}
+	}
+	datafra
+}
+
+#Median imputed dataset
+median_data <- manage_na(dataset)
+########################################################################
+
 #removed 1 since customer id
 percentage_na(dataset,128)
-
 a <- dataset[,-c(1,30,35,36,37,38,48,53,62,70,128)]
 b <- dataset[,-c(1,30,35,36,37,38,48,53,62,70)]
 ncol(a)
@@ -35,7 +53,6 @@ head(a,2)
 ncol(b)
 percentage_na(a,117)
 percentage_na(b,118)
-
 
 str(a)
 #new_train <- mice(a,m=5,maxit=10,meth='pmm',seed=500) 
@@ -74,6 +91,25 @@ new_complete_data_test <- new_complete_data[26966:35953,]
 str(new_complete_data )
 ncol(new_complete_data)
 
+#######################################################################
+
+# col numbers that are numerical -> 5,9,10,11,12,13,16,18,30,35,36,37,38
+# Numerical data set
+num_median_data <- median_data[,c(5,9,10,11,12,13,16,18,30,35,36,37,38)]
+rest_median_data <- median_data[,-c(5,9,10,11,12,13,16,18,30,35,36,37,38)]
+
+#applying principal component analysis
+num_med_pca <- prcomp(num_median_data, center = TRUE, scale. = TRUE)
+num_med_pca
+summary(num_med_pca)
+plot(num_med_pca, type = "l")
+
+## number of components that we'll use -> 4,5
+num_pca_select <- as.data.frame(num_med_pca$x)
+num_pca_select <- num_pca_select[,1:4]
+
+
+#######################################################################
 #applying principal component analysis
 new_complete_data.pca <- prcomp(new_complete_data[,-c(1,99)], center = TRUE, scale. = TRUE)
 print(new_complete_data.pca)
@@ -105,7 +141,6 @@ select(ridgec)
 names(ridgec)
 str(ridgec$coef)
 
-
 #running random forest
 new_complete_data$Response <- as.factor(new_complete_data$Response)
 rf_output <- randomForest(as.factor(Response) ~ ., data = new_complete_data_train, ntree = 1000 )
@@ -116,9 +151,11 @@ importance(rf_output)
 preditions_new <- predict(rf_output, new_complete_data_test)
 mean(preditions_new == new_complete_data_test$Response)
 rf_output
+
 #outcome
 submit <- data.frame(PassengerId = dataset_new$Id, round(Survived = preditions_new))
 submit
+
 #control <- rfeControl(functions = rfFuncs, method = "cv", number = 10)
 #model <- rfe(complete_data[,1:116],complete_data[,117], sizes = c(1:116), rfeControl = control)
 
@@ -132,3 +169,4 @@ summary(lmout)
 AIC(lmout)
 vif(lmout)
 VIF(lmout)
+
