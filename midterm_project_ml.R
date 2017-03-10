@@ -79,6 +79,7 @@ getSelectedAttributes(final.boruta, withTentative = F)
 boruta.df <- attStats(final.boruta)
 print(boruta.df[which(boruta.df$decision == "Rejected"),])
 
+
 write.csv(complete_data,"columnnumbers.csv")
 
 #getting the important variables only
@@ -169,4 +170,104 @@ summary(lmout)
 AIC(lmout)
 vif(lmout)
 VIF(lmout)
+
+
+########################################################################
+
+#running random forest
+set.seed(20)
+head(rest_median_data)
+
+# Converting to factor
+rest_median_data$Response <- as.factor(rest_median_data$Response)
+attach(rest_median_data)
+class(Response)
+
+#combining rest of the data with PCA
+train_med_data_complete <- cbind(rest_median_data,num_pca_select)
+
+# removing coloumn with ID
+train_med_data_complete <- train_med_data_complete[,-1]
+
+#Selecting sample of 10000 observations
+sample <- train_med_data_complete[sample(nrow(train_med_data_complete), 10000), ]
+sample2 <- train_med_data_complete[10000:20000,]
+
+#random forest
+library(randomForest)
+attach(sample)
+rf_output <- randomForest(as.factor(Response) ~ .
+                          , data = sample
+                          , ntree = 1000 )
+
+rf_output
+rf_output$importance
+
+# predicting and checking accuracy
+preditions_new <- predict(rf_output, sample2)
+mean(preditions_new == sample2$Response)
+
+
+# plot error vs no. of tree
+plot(rf_output, main = "Error vs No. of Tree")
+# variable importance
+varImpPlot(rf_output,n.var = 30 )
+
+# random forest with new variables
+select_variables <- train_med_data_complete[,c(115,116,117,118,2,39,25,24
+                                              ,12,28,7,47,80,15,22,24,65
+                                              ,20,31,53,10,53,21,60,5,58
+                                              ,3,63,40,48,114)]
+
+sample <- select_variables[sample(nrow(select_variables), 10000), ]
+sample2 <- select_variables[10000:20000,]
+
+rf_output <- randomForest(as.factor(Response) ~ .
+                          , data = sample
+                          , ntree = 1000 )
+
+rf_output
+
+
+
+# predicting and checking accuracy
+preditions_new <- predict(rf_output, test)
+mean(preditions_new == sample2$Response)
+
+
+#######################################################################
+
+#######################################################################
+# lasso regression
+library(glmnet)
+
+Product_Info_2_new <- as.numeric(train_med_data_complete$Product_Info_2)
+train_med_data_complete$Product_Info_2_new <- Product_Info_2_new
+train_med_data_complete_0 <- train_med_data_complete[,-2]
+train_med_data_complete_1 <- as.matrix(train_med_data_complete[,-113])
+
+sample_3 <- train_med_data_complete_1[sample(nrow(train_med_data_complete_1), 10000), ]
+sample_4 <- train_med_data_complete[10001:20000,]
+
+
+CV <- cv.glmnet(x = sample_3
+                , y = sample_4$Response
+                , family = "multinomial"
+                , type.measure = "class"
+                , alpha = 1
+                , nlambda = 100)
+plot(CV)
+
+fit <- glmnet(x = sample_3
+                , y = sample_4$Response
+                , family = "multinomial"
+                , alpha = 1
+                , lambda = 0.0001)
+
+fit$beta[,1]
+coef(fit, s = 0.0001)
+plot(fit, xvar="lambda")
+######################################################################
+
+test <- read.csv("test.csv")
 
